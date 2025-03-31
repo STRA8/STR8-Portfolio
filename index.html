@@ -1,5 +1,140 @@
-<html>
-<p>
-testing testing
-</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Portfolio</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+        }
+        #terminal {
+            max-width: 800px;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+        .input-container {
+            display: flex;
+            align-items: center;
+        }
+        input {
+            background: black;
+            color: white;
+            font-family: monospace;
+            border: none;
+            outline: none;
+            width: 100%;
+            caret-color: white;
+        }
+        iframe, video {
+            max-width: 100%;
+            height: 400px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal"></div>
+    <div class="input-container">
+        <span>$</span>
+        <input id="commandInput" type="text" autofocus>
+    </div>
+
+    <script>
+        const terminal = document.getElementById("terminal");
+        const input = document.getElementById("commandInput");
+        
+        const rootDirectory = {
+            "about": { "info.txt": "This is STR8's portfolio. A Roblox programmer and creator." },
+            "projects": { "list.txt": "Projects:\n- Jelly Jam\n- LQID Lab\n- STR8's SIEGE" },
+            "videos": { "video1.mp4": "https://www.youtube.com/embed/kTAfoi-pJDA" }
+        };
+        
+        let currentDirectory = rootDirectory;
+        let currentPath = [];
+        
+        function getDirectory(path) {
+            return path.reduce((dir, subdir) => (dir && dir[subdir]) ? dir[subdir] : null, rootDirectory);
+        }
+
+        const commands = {
+            "help": () => "Commands: help, ls, cat [file], cd [dir], clear",
+            "ls": () => Object.entries(currentDirectory)
+                .map(([name, content]) => `${name}: ${typeof content === "object" ? "Directory" : "File"}`)
+                .join("\n"),
+            "cat": (file) => {
+                const content = currentDirectory[file];
+                if (!content) return `bash: ${file}: No such file`;
+                return content.startsWith("https://www.youtube.com/embed/") 
+                    ? `<iframe src="${content}" frameborder="0" allowfullscreen></iframe>` 
+                    : content;
+            },
+            "cd": (dir) => {
+                if (dir === "..") {
+                    if (currentPath.length > 0) {
+                        currentPath.pop();
+                        currentDirectory = getDirectory(currentPath);
+                        return "Moved up one directory.";
+                    }
+                    return "Already at the root directory.";
+                }
+                if (currentDirectory[dir] && typeof currentDirectory[dir] === "object") {
+                    currentPath.push(dir);
+                    currentDirectory = currentDirectory[dir];
+                    return `Changed directory to ${dir}`;
+                }
+                return `bash: cd: ${dir}: No such directory`;
+            },
+            "clear": () => { terminal.innerHTML = ""; return ""; }
+        };
+
+        function executeCommand(command) {
+            const parts = command.split(" ");
+            const cmd = parts[0];
+            const args = parts.slice(1).join(" ");
+            const result = commands[cmd] ? commands[cmd](args) : `bash: ${cmd}: command not found`;
+            terminal.innerHTML += `\n$ ${command}\n${result}`;
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function bootUpSequence() {
+            const bootMessages = [
+                "Initializing system...",
+                "Loading core files...",
+                "Checking connections...",
+                "Loading configuration...",
+                "Welcome to STR8's Terminal Portfolio"
+            ];
+            let index = 0;
+            function printBootMessage() {
+                if (index < bootMessages.length) {
+                    terminal.innerHTML += `\n${bootMessages[index]}`;
+                    terminal.scrollTop = terminal.scrollHeight;
+                    index++;
+                    setTimeout(printBootMessage, 1000);
+                } else {
+                    terminal.innerHTML += "\n$ type help";
+                    input.disabled = false;
+                }
+            }
+            printBootMessage();
+        }
+
+        window.onload = () => {
+            input.disabled = true;
+            bootUpSequence();
+        };
+
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !input.disabled) {
+                executeCommand(input.value.trim());
+                input.value = "";
+            }
+        });
+    </script>
+</body>
 </html>
